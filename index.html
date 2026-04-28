@@ -6,51 +6,33 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
 
   <style>
-    body {
-      text-align: center;
-      font-family: Arial;
-      background: #f5f5f5;
-    }
-
-    canvas {
-      border: 2px solid black;
-      background: black;
-      cursor: crosshair;
-    }
-
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
+    body { text-align:center; font-family:Arial; }
+    canvas { border:2px solid black; background:black; }
+    button { margin:10px; padding:10px; }
   </style>
 </head>
 
 <body>
 
-<h2>✍️ Vẽ số (0-9)</h2>
+<h2> Vẽ số </h2>
 
 <canvas id="canvas" width="280" height="280"></canvas>
-
 <br>
 
-<button onclick="predict()">🔍 Dự đoán</button>
-<button onclick="clearCanvas()">🧹 Xóa</button>
+<button onclick="predict()">Dự đoán</button>
+<button onclick="clearCanvas()">Xóa</button>
 
 <h3 id="result">Loading model...</h3>
 
 <script>
 let model;
 
-// ===== LOAD MODEL =====
+// LOAD MODEL 
 async function loadModel() {
-  try {
-    model = await tf.loadLayersModel('tfjs_model/model.json');
-    document.getElementById("result").innerText = "✅ Model loaded!";
-  } catch (err) {
-    console.error(err);
-    document.getElementById("result").innerText = "❌ Load model lỗi!";
-  }
+  model = await tf.loadLayersModel(
+    "https://storage.googleapis.com/tfjs-models/tfjs/mnist/model.json"
+  );
+  document.getElementById("result").innerText = "✅ Model loaded!";
 }
 loadModel();
 
@@ -59,51 +41,47 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
 ctx.fillStyle = "black";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillRect(0,0,280,280);
 
 let drawing = false;
 
-canvas.addEventListener("mousedown", () => drawing = true);
-canvas.addEventListener("mouseup", () => drawing = false);
-canvas.addEventListener("mousemove", draw);
-
-function draw(e) {
-  if (!drawing) return;
+canvas.onmousedown = () => drawing = true;
+canvas.onmouseup = () => drawing = false;
+canvas.onmousemove = e => {
+  if(!drawing) return;
   ctx.fillStyle = "white";
   ctx.beginPath();
-  ctx.arc(e.offsetX, e.offsetY, 8, 0, Math.PI * 2);
+  ctx.arc(e.offsetX, e.offsetY, 8, 0, Math.PI*2);
   ctx.fill();
+};
+
+function clearCanvas(){
+  ctx.fillStyle="black";
+  ctx.fillRect(0,0,280,280);
 }
 
-// ===== CLEAR =====
-function clearCanvas() {
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-// ===== PREPROCESS + PREDICT =====
-function predict() {
-  if (!model) {
+// ===== PREDICT =====
+function predict(){
+  if(!model){
     alert("Model chưa load xong!");
     return;
   }
 
-  let imgData = ctx.getImageData(0, 0, 280, 280);
+  let img = ctx.getImageData(0,0,280,280);
 
-  let tensor = tf.browser.fromPixels(imgData, 1)
-    .resizeNearestNeighbor([28, 28])
+  let tensor = tf.browser.fromPixels(img, 1)
+    .resizeNearestNeighbor([28,28])
     .toFloat()
     .div(255.0)
     .expandDims(0);
 
-  let prediction = model.predict(tensor);
-  let data = prediction.dataSync();
+  let pred = model.predict(tensor);
+  let data = pred.dataSync();
 
-  let maxIndex = data.indexOf(Math.max(...data));
+  let digit = data.indexOf(Math.max(...data));
 
   document.getElementById("result").innerText =
-    "👉 Dự đoán: " + maxIndex +
-    " | Confidence: " + (Math.max(...data) * 100).toFixed(2) + "%";
+    "👉 Dự đoán: " + digit;
 }
 </script>
 
