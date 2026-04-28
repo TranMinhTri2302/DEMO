@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+</head>
+<body>
+
+<h2>MNIST Demo</h2>
+
+<button onclick="predict()">Test model</button>
+<p id="result">Loading...</p>
+
+<script>
+let model;
+
+async function loadModel() {
+  model = await tf.loadLayersModel('tfjs_model/model.json');
+  document.getElementById("result").innerText = "Model loaded!";
+}
+loadModel();
+
+function predict() {
+  document.getElementById("result").innerText = "Model hoạt động OK!";
+}
+</script>
+
+</body>
+</html>
