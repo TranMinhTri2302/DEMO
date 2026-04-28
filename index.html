@@ -1,64 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <meta charset="UTF-8">
+  <title>MNIST AI Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial;
+      background: #f5f5f5;
+    }
+
+    canvas {
+      border: 2px solid black;
+      background: black;
+      cursor: crosshair;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>MNIST Demo (Vẽ số)</h2>
+<h2>✍️ Vẽ số (0-9)</h2>
 
-<canvas id="canvas" width="280" height="280" style="border:1px solid black"></canvas>
-<br><br>
+<canvas id="canvas" width="280" height="280"></canvas>
 
-<button onclick="predict()">Dự đoán</button>
-<button onclick="clearCanvas()">Xóa</button>
+<br>
 
-<p id="result">Loading...</p>
+<button onclick="predict()">🔍 Dự đoán</button>
+<button onclick="clearCanvas()">🧹 Xóa</button>
+
+<h3 id="result">Loading model...</h3>
 
 <script>
 let model;
 
-// load model
+// ===== LOAD MODEL =====
 async function loadModel() {
-  model = await tf.loadLayersModel('tfjs_model/model.json');
-  document.getElementById("result").innerText = "Model loaded!";
+  try {
+    model = await tf.loadLayersModel('tfjs_model/model.json');
+    document.getElementById("result").innerText = "✅ Model loaded!";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("result").innerText = "❌ Load model lỗi!";
+  }
 }
 loadModel();
 
-// setup canvas vẽ
-let canvas = document.getElementById('canvas');
-let ctx = canvas.getContext('2d');
+// ===== CANVAS =====
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+ctx.fillStyle = "black";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 let drawing = false;
 
-canvas.addEventListener('mousedown', () => drawing = true);
-canvas.addEventListener('mouseup', () => drawing = false);
-canvas.addEventListener('mousemove', draw);
+canvas.addEventListener("mousedown", () => drawing = true);
+canvas.addEventListener("mouseup", () => drawing = false);
+canvas.addEventListener("mousemove", draw);
 
 function draw(e) {
   if (!drawing) return;
-  ctx.fillStyle = 'black';
-  ctx.fillRect(e.offsetX, e.offsetY, 12, 12);
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(e.offsetX, e.offsetY, 8, 0, Math.PI * 2);
+  ctx.fill();
 }
 
-// xóa
+// ===== CLEAR =====
 function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-// predict
+// ===== PREPROCESS + PREDICT =====
 function predict() {
-  let img = ctx.getImageData(0, 0, 280, 280);
+  if (!model) {
+    alert("Model chưa load xong!");
+    return;
+  }
 
-  let tensor = tf.browser.fromPixels(img, 1)
-    .resizeNearestNeighbor([28,28])
+  let imgData = ctx.getImageData(0, 0, 280, 280);
+
+  let tensor = tf.browser.fromPixels(imgData, 1)
+    .resizeNearestNeighbor([28, 28])
     .toFloat()
     .div(255.0)
     .expandDims(0);
 
   let prediction = model.predict(tensor);
-  let digit = prediction.argMax(1).dataSync()[0];
+  let data = prediction.dataSync();
 
-  document.getElementById("result").innerText = "Dự đoán: " + digit;
+  let maxIndex = data.indexOf(Math.max(...data));
+
+  document.getElementById("result").innerText =
+    "👉 Dự đoán: " + maxIndex +
+    " | Confidence: " + (Math.max(...data) * 100).toFixed(2) + "%";
 }
 </script>
 
