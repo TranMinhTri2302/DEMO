@@ -5,22 +5,60 @@
 </head>
 <body>
 
-<h2>MNIST Demo</h2>
+<h2>MNIST Demo (Vẽ số)</h2>
 
-<button onclick="predict()">Test model</button>
+<canvas id="canvas" width="280" height="280" style="border:1px solid black"></canvas>
+<br><br>
+
+<button onclick="predict()">Dự đoán</button>
+<button onclick="clearCanvas()">Xóa</button>
+
 <p id="result">Loading...</p>
 
 <script>
 let model;
 
+// load model
 async function loadModel() {
   model = await tf.loadLayersModel('tfjs_model/model.json');
   document.getElementById("result").innerText = "Model loaded!";
 }
 loadModel();
 
+// setup canvas vẽ
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+let drawing = false;
+
+canvas.addEventListener('mousedown', () => drawing = true);
+canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mousemove', draw);
+
+function draw(e) {
+  if (!drawing) return;
+  ctx.fillStyle = 'black';
+  ctx.fillRect(e.offsetX, e.offsetY, 12, 12);
+}
+
+// xóa
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// predict
 function predict() {
-  document.getElementById("result").innerText = "Model hoạt động OK!";
+  let img = ctx.getImageData(0, 0, 280, 280);
+
+  let tensor = tf.browser.fromPixels(img, 1)
+    .resizeNearestNeighbor([28,28])
+    .toFloat()
+    .div(255.0)
+    .expandDims(0);
+
+  let prediction = model.predict(tensor);
+  let digit = prediction.argMax(1).dataSync()[0];
+
+  document.getElementById("result").innerText = "Dự đoán: " + digit;
 }
 </script>
 
